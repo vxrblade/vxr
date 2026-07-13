@@ -1,0 +1,1310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Download Center</title>
+<meta name="description" content="Every file is synced directly from GitHub. Upload once, download anywhere.">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<style>
+/* ==========================================================================
+   Download Center — Design Tokens
+   Palette: graphite / aurora — a cool near-black surface with a violet→teal
+   sync-glow accent, evoking a live data channel rather than a file cabinet.
+   ========================================================================== */
+
+:root {
+  /* Surfaces */
+  --bg: #0a0b0f;
+  --bg-soft: #0d0f15;
+  --surface: rgba(255, 255, 255, 0.045);
+  --surface-hover: rgba(255, 255, 255, 0.075);
+  --border: rgba(255, 255, 255, 0.09);
+  --border-strong: rgba(255, 255, 255, 0.16);
+
+  /* Text */
+  --text-primary: #f1f2f5;
+  --text-secondary: #a3a6b3;
+  --text-tertiary: #6b6e7c;
+
+  /* Accent — violet to teal aurora */
+  --accent-violet: #8b6bff;
+  --accent-teal: #33d9c9;
+  --accent-pink: #ff6ba8;
+  --accent-gradient: linear-gradient(135deg, var(--accent-violet), var(--accent-teal));
+
+  /* Category accents */
+  --c-documents: #6ba8ff;
+  --c-images: #ff9f6b;
+  --c-videos: #ff6b8f;
+  --c-audio: #b48bff;
+  --c-archives: #f2c94c;
+  --c-applications: #33d9c9;
+  --c-code: #7ee08a;
+  --c-others: #9a9ca8;
+
+  /* Type */
+  --font-display: "Space Grotesk", "Inter", sans-serif;
+  --font-body: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  /* Radii & shadow */
+  --radius-lg: 22px;
+  --radius-md: 14px;
+  --radius-sm: 9px;
+  --shadow-card: 0 1px 1px rgba(0,0,0,0.2), 0 20px 40px -20px rgba(0,0,0,0.6);
+  --shadow-glow: 0 0 0 1px rgba(255,255,255,0.04), 0 30px 60px -25px rgba(139,107,255,0.25);
+
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@media (prefers-color-scheme: light) {
+  :root { color-scheme: dark; } /* this experience is dark-only by design */
+}
+
+* { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0,0,0,0);
+  white-space: nowrap;
+  border: 0;
+}
+
+::selection { background: rgba(139,107,255,0.35); color: #fff; }
+
+:focus-visible {
+  outline: 2px solid var(--accent-teal);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+
+/* ==========================================================================
+   Ambient background
+   ========================================================================== */
+
+.ambient {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(90px);
+  opacity: 0.35;
+  will-change: transform;
+  animation: drift 26s ease-in-out infinite;
+}
+
+.blob-a {
+  width: 46vw; height: 46vw;
+  background: radial-gradient(circle, var(--accent-violet), transparent 70%);
+  top: -14vw; left: -10vw;
+  animation-duration: 30s;
+}
+
+.blob-b {
+  width: 38vw; height: 38vw;
+  background: radial-gradient(circle, var(--accent-teal), transparent 70%);
+  bottom: -12vw; right: -8vw;
+  animation-duration: 34s;
+  animation-delay: -8s;
+}
+
+.blob-c {
+  width: 26vw; height: 26vw;
+  background: radial-gradient(circle, var(--accent-pink), transparent 70%);
+  top: 40%; left: 55%;
+  opacity: 0.18;
+  animation-duration: 22s;
+  animation-delay: -4s;
+}
+
+@keyframes drift {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(4%, 6%) scale(1.08); }
+  66% { transform: translate(-5%, -3%) scale(0.96); }
+}
+
+.grain {
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgba(255,255,255,0.025) 1px, transparent 1px);
+  background-size: 3px 3px;
+  opacity: 0.5;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .blob { animation: none; }
+}
+
+/* ==========================================================================
+   Hero
+   ========================================================================== */
+
+.hero {
+  position: relative;
+  z-index: 1;
+  padding: clamp(64px, 12vw, 128px) 24px 48px;
+  text-align: center;
+}
+
+.hero-content {
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.sync-breadcrumb {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 16px 7px 12px;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  letter-spacing: 0.01em;
+  margin-bottom: 28px;
+  backdrop-filter: blur(12px);
+  animation: fade-up 0.7s var(--ease) both;
+}
+
+.sync-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--accent-teal);
+  box-shadow: 0 0 0 3px rgba(51,217,201,0.18);
+  animation: pulse-dot 1.8s ease-in-out infinite;
+}
+
+.sync-dot.is-error { background: var(--accent-pink); box-shadow: 0 0 0 3px rgba(255,107,168,0.18); }
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.8); }
+}
+
+.hero-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(2.6rem, 7vw, 4.6rem);
+  line-height: 1.02;
+  letter-spacing: -0.03em;
+  margin: 0 0 18px;
+  background: linear-gradient(180deg, #ffffff 0%, #c7c9d6 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: fade-up 0.7s var(--ease) 0.05s both;
+}
+
+.hero-subtitle {
+  font-size: clamp(1rem, 2vw, 1.15rem);
+  color: var(--text-secondary);
+  max-width: 480px;
+  margin: 0 auto;
+  line-height: 1.6;
+  animation: fade-up 0.7s var(--ease) 0.1s both;
+}
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.sync-line {
+  position: relative;
+  height: 1px;
+  width: min(340px, 70%);
+  margin: 40px auto 0;
+  background: linear-gradient(90deg, transparent, var(--border-strong) 20%, var(--border-strong) 80%, transparent);
+  overflow: visible;
+}
+
+.sync-pulse {
+  position: absolute;
+  top: 50%; left: 0;
+  width: 60px; height: 2px;
+  transform: translateY(-50%);
+  background: linear-gradient(90deg, transparent, var(--accent-teal), var(--accent-violet), transparent);
+  filter: drop-shadow(0 0 6px rgba(51,217,201,0.6));
+  animation: travel 3.2s ease-in-out infinite;
+}
+
+@keyframes travel {
+  0% { left: -10%; }
+  100% { left: 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sync-pulse { animation: none; left: 50%; }
+}
+
+/* ==========================================================================
+   Layout
+   ========================================================================== */
+
+main {
+  position: relative;
+  z-index: 1;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 0 24px 100px;
+}
+
+/* ==========================================================================
+   Stats bar
+   ========================================================================== */
+
+.stats-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 26px clamp(16px, 4vw, 36px);
+  backdrop-filter: blur(16px);
+  box-shadow: var(--shadow-card);
+  margin-bottom: 28px;
+  flex-wrap: wrap;
+  animation: fade-up 0.7s var(--ease) 0.15s both;
+}
+
+.stat-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: center;
+  flex: 1;
+  min-width: 110px;
+}
+
+.stat-value {
+  font-family: var(--font-display);
+  font-size: clamp(1.4rem, 3vw, 1.9rem);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  background: var(--accent-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.stat-value--text {
+  font-size: clamp(0.95rem, 2vw, 1.1rem);
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stat-label {
+  font-size: 12.5px;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+
+.stat-divider {
+  width: 1px;
+  height: 34px;
+  background: var(--border);
+  flex-shrink: 0;
+}
+
+@media (max-width: 720px) {
+  .stat-divider { display: none; }
+  .stat-card { min-width: 40%; }
+}
+
+/* ==========================================================================
+   Controls: search + sort
+   ========================================================================== */
+
+.controls {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 18px;
+  animation: fade-up 0.7s var(--ease) 0.2s both;
+}
+
+.search-wrap {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+}
+
+.search-icon {
+  position: absolute;
+  left: 18px;
+  width: 18px; height: 18px;
+  color: var(--text-tertiary);
+  pointer-events: none;
+  transition: color 0.25s var(--ease);
+}
+
+#searchInput {
+  width: 100%;
+  padding: 15px 18px 15px 48px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 15px;
+  backdrop-filter: blur(12px);
+  transition: border-color 0.25s var(--ease), background 0.25s var(--ease);
+}
+
+#searchInput::placeholder { color: var(--text-tertiary); }
+
+#searchInput:hover { background: var(--surface-hover); }
+
+#searchInput:focus {
+  outline: none;
+  border-color: var(--accent-violet);
+  background: var(--surface-hover);
+}
+
+#searchInput:focus + .search-icon,
+.search-wrap:focus-within .search-icon { color: var(--accent-teal); }
+
+.sort-wrap select {
+  height: 100%;
+  padding: 15px 40px 15px 18px;
+  background: var(--surface) url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="none"><path d="m5 7.5 5 5 5-5" stroke="%23a3a6b3" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>') no-repeat right 14px center;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 14.5px;
+  appearance: none;
+  cursor: pointer;
+  backdrop-filter: blur(12px);
+  transition: border-color 0.25s var(--ease), background-color 0.25s var(--ease);
+  background-size: 16px;
+}
+
+.sort-wrap select:hover { background-color: var(--surface-hover); }
+.sort-wrap select:focus { outline: none; border-color: var(--accent-violet); }
+.sort-wrap select option { background: #14161d; color: var(--text-primary); }
+
+@media (max-width: 560px) {
+  .controls { flex-direction: column; }
+}
+
+/* ==========================================================================
+   Filter chips
+   ========================================================================== */
+
+.filter-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 34px;
+  animation: fade-up 0.7s var(--ease) 0.25s both;
+}
+
+.chip {
+  padding: 9px 16px;
+  border-radius: 999px;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  font-family: var(--font-body);
+  font-size: 13.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.25s var(--ease), color 0.25s var(--ease), border-color 0.25s var(--ease), transform 0.15s var(--ease);
+}
+
+.chip:hover {
+  background: var(--surface-hover);
+  color: var(--text-primary);
+  border-color: var(--border-strong);
+}
+
+.chip:active { transform: scale(0.96); }
+
+.chip.is-active {
+  background: var(--accent-gradient);
+  border-color: transparent;
+  color: #0a0b0f;
+  font-weight: 600;
+}
+
+/* ==========================================================================
+   File grid & cards
+   ========================================================================== */
+
+.file-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(258px, 1fr));
+  gap: 16px;
+}
+
+.hidden { display: none !important; }
+
+.file-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 22px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  backdrop-filter: blur(14px);
+  box-shadow: var(--shadow-card);
+  opacity: 0;
+  transform: translateY(18px) scale(0.98);
+  animation: card-in 0.6s var(--ease) forwards;
+  transition: transform 0.35s var(--ease), border-color 0.35s var(--ease), box-shadow 0.35s var(--ease), background 0.35s var(--ease);
+}
+
+.file-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(140deg, var(--accent, var(--accent-violet)) 0%, transparent 40%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.35s var(--ease);
+  pointer-events: none;
+}
+
+.file-card:hover,
+.file-card:focus-within {
+  transform: translateY(-5px) scale(1.015);
+  border-color: transparent;
+  background: var(--surface-hover);
+  box-shadow: var(--shadow-glow);
+}
+
+.file-card:hover::before,
+.file-card:focus-within::before { opacity: 0.7; }
+
+@keyframes card-in {
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.card-icon {
+  width: 46px; height: 46px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--accent, var(--accent-violet)) 16%, transparent);
+  color: var(--accent, var(--accent-violet));
+  flex-shrink: 0;
+  transition: transform 0.35s var(--ease);
+}
+
+.file-card:hover .card-icon { transform: scale(1.08) rotate(-3deg); }
+
+.card-icon svg { width: 24px; height: 24px; }
+
+.badge {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  padding: 4px 9px;
+  border-radius: 999px;
+  color: var(--accent, var(--accent-violet));
+  background: color-mix(in srgb, var(--accent, var(--accent-violet)) 14%, transparent);
+  text-transform: uppercase;
+  height: fit-content;
+}
+
+.card-name {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 15.5px;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.35;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  word-break: break-word;
+}
+
+.card-meta {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-tertiary);
+  margin-top: -6px;
+}
+
+.meta-sep { opacity: 0.5; }
+
+.download-btn {
+  position: relative;
+  overflow: hidden;
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 11px 16px;
+  border-radius: var(--radius-sm);
+  background: rgba(255,255,255,0.06);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  text-decoration: none;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.25s var(--ease), border-color 0.25s var(--ease), color 0.25s var(--ease);
+}
+
+.download-btn:hover {
+  background: var(--accent-gradient);
+  border-color: transparent;
+  color: #0a0b0f;
+}
+
+.download-btn:hover .btn-icon { transform: translateY(1px); }
+
+.btn-icon { width: 16px; height: 16px; transition: transform 0.25s var(--ease); }
+
+.download-btn .ripple {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.5);
+  transform: scale(0);
+  animation: ripple-out 0.6s ease-out;
+  pointer-events: none;
+}
+
+@keyframes ripple-out {
+  to { transform: scale(3.2); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .file-card { animation: none; opacity: 1; transform: none; }
+  .file-card:hover { transform: none; }
+}
+
+/* ==========================================================================
+   Skeleton loading
+   ========================================================================== */
+
+.skeleton-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(258px, 1fr));
+  gap: 16px;
+}
+
+.skeleton-card {
+  height: 176px;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(100deg, var(--surface) 30%, var(--surface-hover) 50%, var(--surface) 70%);
+  background-size: 200% 100%;
+  border: 1px solid var(--border);
+  animation: shimmer 1.6s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0% { background-position: 140% 0; }
+  100% { background-position: -40% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-card { animation: none; }
+}
+
+/* ==========================================================================
+   State panels (empty / error / no-results)
+   ========================================================================== */
+
+.state-panel {
+  text-align: center;
+  padding: 80px 24px;
+  max-width: 420px;
+  margin: 0 auto;
+  animation: fade-up 0.5s var(--ease) both;
+}
+
+.state-glyph {
+  width: 56px; height: 56px;
+  color: var(--text-tertiary);
+  margin-bottom: 18px;
+}
+
+.state-panel h2 {
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  margin: 0 0 8px;
+  color: var(--text-primary);
+}
+
+.state-panel p {
+  color: var(--text-secondary);
+  font-size: 14.5px;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.state-panel code {
+  font-family: var(--font-mono);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 2px 7px;
+  border-radius: 6px;
+  color: var(--accent-teal);
+}
+
+.retry-btn {
+  margin-top: 22px;
+  padding: 12px 28px;
+  border-radius: 999px;
+  border: none;
+  background: var(--accent-gradient);
+  color: #0a0b0f;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: transform 0.2s var(--ease), box-shadow 0.2s var(--ease);
+}
+
+.retry-btn:hover { transform: translateY(-2px); box-shadow: 0 12px 28px -12px rgba(139,107,255,0.5); }
+.retry-btn:active { transform: translateY(0); }
+
+/* ==========================================================================
+   Footer
+   ========================================================================== */
+
+.site-footer {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  padding: 40px 24px 60px;
+  font-size: 13px;
+  color: var(--text-tertiary);
+}
+
+/* ==========================================================================
+   Responsive fine-tuning
+   ========================================================================== */
+
+@media (max-width: 420px) {
+  .file-grid, .skeleton-grid { grid-template-columns: 1fr; }
+  .hero { padding-top: 56px; }
+}
+
+</style>
+</head>
+<body>
+
+<!-- Ambient background -->
+<div class="ambient" aria-hidden="true">
+  <div class="blob blob-a"></div>
+  <div class="blob blob-b"></div>
+  <div class="blob blob-c"></div>
+  <div class="grain"></div>
+</div>
+
+<header class="hero">
+  <div class="hero-content">
+    <div class="sync-breadcrumb" id="syncBreadcrumb" aria-live="polite">
+      <span class="sync-dot" id="syncDot"></span>
+      <span class="breadcrumb-text" id="breadcrumbText">connecting to github&hellip;</span>
+    </div>
+
+    <h1 class="hero-title">Download Center</h1>
+    <p class="hero-subtitle">Every file is synced directly from GitHub. Upload once, download anywhere.</p>
+
+    <div class="sync-line" aria-hidden="true">
+      <div class="sync-pulse" id="syncPulse"></div>
+    </div>
+  </div>
+</header>
+
+<main id="main">
+
+  <!-- Stats -->
+  <section class="stats-bar" aria-label="Repository statistics">
+    <div class="stat-card">
+      <span class="stat-value" id="statFiles">0</span>
+      <span class="stat-label">Total Files</span>
+    </div>
+    <div class="stat-divider" aria-hidden="true"></div>
+    <div class="stat-card">
+      <span class="stat-value" id="statStorage">0</span>
+      <span class="stat-label">Storage Used</span>
+    </div>
+    <div class="stat-divider" aria-hidden="true"></div>
+    <div class="stat-card">
+      <span class="stat-value stat-value--text" id="statLargest">&mdash;</span>
+      <span class="stat-label">Largest File</span>
+    </div>
+    <div class="stat-divider" aria-hidden="true"></div>
+    <div class="stat-card">
+      <span class="stat-value stat-value--text" id="statLatest">&mdash;</span>
+      <span class="stat-label">Latest Upload</span>
+    </div>
+  </section>
+
+  <!-- Controls -->
+  <section class="controls">
+    <div class="search-wrap">
+      <svg class="search-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/>
+        <path d="m20 20-3.5-3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      <input type="search" id="searchInput" placeholder="Search by name or type&hellip;" aria-label="Search files by name or extension" autocomplete="off">
+    </div>
+
+    <div class="sort-wrap">
+      <label for="sortSelect" class="sr-only">Sort files</label>
+      <select id="sortSelect" aria-label="Sort files">
+        <option value="newest">Newest</option>
+        <option value="oldest">Oldest</option>
+        <option value="az">A &rarr; Z</option>
+        <option value="za">Z &rarr; A</option>
+        <option value="largest">Largest</option>
+        <option value="smallest">Smallest</option>
+      </select>
+    </div>
+  </section>
+
+  <div class="filter-chips" role="group" aria-label="Filter files by category" id="filterChips">
+    <button class="chip is-active" data-filter="all" aria-pressed="true">All</button>
+    <button class="chip" data-filter="documents" aria-pressed="false">Documents</button>
+    <button class="chip" data-filter="images" aria-pressed="false">Images</button>
+    <button class="chip" data-filter="videos" aria-pressed="false">Videos</button>
+    <button class="chip" data-filter="audio" aria-pressed="false">Audio</button>
+    <button class="chip" data-filter="archives" aria-pressed="false">Archives</button>
+    <button class="chip" data-filter="applications" aria-pressed="false">Applications</button>
+    <button class="chip" data-filter="code" aria-pressed="false">Code</button>
+    <button class="chip" data-filter="others" aria-pressed="false">Others</button>
+  </div>
+
+  <!-- Loading skeletons -->
+  <div class="skeleton-grid" id="loadingState">
+    <div class="skeleton-card" aria-hidden="true"></div>
+    <div class="skeleton-card" aria-hidden="true"></div>
+    <div class="skeleton-card" aria-hidden="true"></div>
+    <div class="skeleton-card" aria-hidden="true"></div>
+    <div class="skeleton-card" aria-hidden="true"></div>
+    <div class="skeleton-card" aria-hidden="true"></div>
+  </div>
+
+  <!-- Error state -->
+  <div class="state-panel hidden" id="errorState" role="alert">
+    <svg class="state-glyph" viewBox="0 0 64 64" fill="none" aria-hidden="true">
+      <circle cx="32" cy="32" r="28" stroke="currentColor" stroke-width="2" opacity="0.35"/>
+      <path d="M32 20v16" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+      <circle cx="32" cy="44" r="1.8" fill="currentColor"/>
+    </svg>
+    <h2>Couldn't reach GitHub</h2>
+    <p id="errorMessage">The repository didn't respond. Check your connection and try again.</p>
+    <button class="retry-btn" id="retryBtn">Retry</button>
+  </div>
+
+  <!-- Empty state -->
+  <div class="state-panel hidden" id="emptyState">
+    <svg class="state-glyph" viewBox="0 0 64 64" fill="none" aria-hidden="true">
+      <rect x="14" y="10" width="36" height="44" rx="4" stroke="currentColor" stroke-width="2" opacity="0.35"/>
+      <path d="M22 24h20M22 32h20M22 40h12" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity="0.6"/>
+    </svg>
+    <h2>No files uploaded yet.</h2>
+    <p>Drop something into the <code id="emptyFolderPath">downloads</code> folder on GitHub and it will show up here.</p>
+  </div>
+
+  <!-- No search results -->
+  <div class="state-panel hidden" id="noResultsState">
+    <svg class="state-glyph" viewBox="0 0 64 64" fill="none" aria-hidden="true">
+      <circle cx="28" cy="28" r="14" stroke="currentColor" stroke-width="2" opacity="0.4"/>
+      <path d="m38 38 12 12" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+    </svg>
+    <h2>Nothing matches</h2>
+    <p>Try a different search term or filter.</p>
+  </div>
+
+  <!-- File grid -->
+  <ul class="file-grid hidden" id="fileGrid" aria-label="Available downloads"></ul>
+
+</main>
+
+<footer class="site-footer">
+  <p>Synced automatically from <span id="footerRepo">GitHub</span>. No uploads, no backend, just files.</p>
+</footer>
+
+<!-- Card template -->
+<template id="cardTemplate">
+  <li class="file-card" role="listitem">
+    <div class="card-top">
+      <div class="card-icon" aria-hidden="true"></div>
+      <span class="badge"></span>
+    </div>
+    <h3 class="card-name"></h3>
+    <div class="card-meta">
+      <span class="meta-size"></span>
+      <span class="meta-sep" aria-hidden="true">&middot;</span>
+      <span class="meta-date"></span>
+    </div>
+    <a class="download-btn" download>
+      <span class="btn-label">Download</span>
+      <svg class="btn-icon" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+        <path d="M10 3v9m0 0 3.5-3.5M10 12l-3.5-3.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M4 15.5v1a1.5 1.5 0 0 0 1.5 1.5h9a1.5 1.5 0 0 0 1.5-1.5v-1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+      </svg>
+    </a>
+  </li>
+</template>
+
+<script>
+/* ==========================================================================
+   Download Center
+   ------------------------------------------------------------------------
+   Everything below is driven entirely by the CONFIG object. To point this
+   site at a different repository/folder, edit CONFIG only — nothing else
+   in this file (or index.html / style.css) needs to change.
+   ========================================================================== */
+
+const CONFIG = {
+  owner: "your-username",   // GitHub username or organization
+  repo: "your-repository",  // Repository name
+  branch: "main",           // Branch to read from
+  folder: "downloads",      // Folder inside the repo to list
+};
+
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes — avoids hammering the API on refresh
+const API_ROOT = "https://api.github.com";
+
+/* ==========================================================================
+   Category + icon mapping
+   ========================================================================== */
+
+const CATEGORY_MAP = {
+  documents: ["pdf", "doc", "docx", "txt", "rtf", "md", "ppt", "pptx", "xls", "xlsx", "csv", "odt"],
+  images: ["png", "jpg", "jpeg", "svg", "gif", "webp", "bmp", "ico", "avif"],
+  videos: ["mp4", "mov", "avi", "mkv", "webm", "flv", "m4v"],
+  audio: ["mp3", "wav", "ogg", "flac", "m4a", "aac"],
+  archives: ["zip", "rar", "7z", "tar", "gz", "bz2"],
+  applications: ["exe", "apk", "dmg", "msi", "deb", "appimage", "bin"],
+  code: ["html", "css", "js", "json", "py", "java", "c", "cpp", "ts", "jsx", "tsx", "php", "xml", "yml", "yaml", "sql", "sh"],
+};
+
+function categoryFor(ext) {
+  for (const [category, exts] of Object.entries(CATEGORY_MAP)) {
+    if (exts.includes(ext)) return category;
+  }
+  return "others";
+}
+
+// Per-extension display badges route to a shared icon per category, so any
+// new extension automatically inherits a sensible icon + accent color.
+const ICONS = {
+  documents: (accent) => svgIcon(accent, `<path d="M7 3h7l5 5v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M14 3v5h5" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M9 13h6M9 16.5h6M9 9.5h2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>`),
+  images: (accent) => svgIcon(accent, `<rect x="3.5" y="4.5" width="17" height="15" rx="2" stroke="currentColor" stroke-width="1.6"/><circle cx="8.5" cy="9.5" r="1.6" stroke="currentColor" stroke-width="1.4"/><path d="m4.5 17 5-5 3 3 3.5-4L20 16" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/>`),
+  videos: (accent) => svgIcon(accent, `<rect x="3" y="5.5" width="14" height="13" rx="2" stroke="currentColor" stroke-width="1.6"/><path d="m17 10 4-2.5v9L17 14" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>`),
+  audio: (accent) => svgIcon(accent, `<path d="M9 17.5a2.5 2.5 0 1 1-2.5-2.5H9V17.5Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M9 15V6l10-2v11" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M19 15.5A2.5 2.5 0 1 1 16.5 13H19v2.5Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>`),
+  archives: (accent) => svgIcon(accent, `<rect x="4" y="4" width="16" height="16" rx="2" stroke="currentColor" stroke-width="1.6"/><path d="M11 4v3m2-3v3m-2 2v2m2-2v2m-2 2v2m2-2v2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><rect x="10" y="14.5" width="4" height="3" rx="0.6" stroke="currentColor" stroke-width="1.3"/>`),
+  applications: (accent) => svgIcon(accent, `<rect x="4" y="4" width="16" height="16" rx="4" stroke="currentColor" stroke-width="1.6"/><path d="M9 9h6v6H9z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>`),
+  code: (accent) => svgIcon(accent, `<path d="m9 8-4.5 4L9 16M15 8l4.5 4L15 16" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>`),
+  others: (accent) => svgIcon(accent, `<path d="M7 3h7l5 5v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M14 3v5h5" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>`),
+};
+
+function svgIcon(accent, inner) {
+  return `<svg viewBox="0 0 24 24" fill="none" style="color:${accent}">${inner}</svg>`;
+}
+
+const CATEGORY_LABELS = {
+  documents: "Documents", images: "Images", videos: "Videos", audio: "Audio",
+  archives: "Archives", applications: "Applications", code: "Code", others: "Others",
+};
+
+/* ==========================================================================
+   State
+   ========================================================================== */
+
+const state = {
+  files: [],        // raw normalized file records
+  search: "",
+  sort: "newest",
+  filter: "all",
+};
+
+/* ==========================================================================
+   DOM refs
+   ========================================================================== */
+
+const el = {
+  breadcrumb: document.getElementById("breadcrumbText"),
+  syncDot: document.getElementById("syncDot"),
+  loading: document.getElementById("loadingState"),
+  error: document.getElementById("errorState"),
+  errorMessage: document.getElementById("errorMessage"),
+  empty: document.getElementById("emptyState"),
+  emptyFolder: document.getElementById("emptyFolderPath"),
+  noResults: document.getElementById("noResultsState"),
+  grid: document.getElementById("fileGrid"),
+  search: document.getElementById("searchInput"),
+  sort: document.getElementById("sortSelect"),
+  chips: document.getElementById("filterChips"),
+  retry: document.getElementById("retryBtn"),
+  statFiles: document.getElementById("statFiles"),
+  statStorage: document.getElementById("statStorage"),
+  statLargest: document.getElementById("statLargest"),
+  statLatest: document.getElementById("statLatest"),
+  footerRepo: document.getElementById("footerRepo"),
+  template: document.getElementById("cardTemplate"),
+};
+
+el.breadcrumb.textContent = `${CONFIG.owner}/${CONFIG.repo}/${CONFIG.branch}/${CONFIG.folder}`;
+el.emptyFolder.textContent = `/${CONFIG.folder}`;
+el.footerRepo.textContent = `${CONFIG.owner}/${CONFIG.repo}`;
+
+/* ==========================================================================
+   Helpers
+   ========================================================================== */
+
+function formatBytes(bytes) {
+  if (bytes === 0) return "0 B";
+  const units = ["B", "KB", "MB", "GB", "TB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(1024));
+  const value = bytes / Math.pow(1024, i);
+  return `${value >= 100 || i === 0 ? Math.round(value) : value.toFixed(1)} ${units[i]}`;
+}
+
+function formatDate(iso) {
+  if (!iso) return "Unknown date";
+  const d = new Date(iso);
+  return d.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+}
+
+function extOf(filename) {
+  const parts = filename.split(".");
+  return parts.length > 1 ? parts.pop().toLowerCase() : "";
+}
+
+function cacheGet(key) {
+  try {
+    const raw = sessionStorage.getItem(key);
+    if (!raw) return null;
+    const { value, ts } = JSON.parse(raw);
+    if (Date.now() - ts > CACHE_TTL_MS) return null;
+    return value;
+  } catch { return null; }
+}
+
+function cacheSet(key, value) {
+  try {
+    sessionStorage.setItem(key, JSON.stringify({ value, ts: Date.now() }));
+  } catch { /* storage full or unavailable — fail silently */ }
+}
+
+/* ==========================================================================
+   GitHub fetching
+   ========================================================================== */
+
+async function fetchFolderContents() {
+  const cacheKey = `dc:contents:${CONFIG.owner}/${CONFIG.repo}/${CONFIG.branch}/${CONFIG.folder}`;
+  const cached = cacheGet(cacheKey);
+  if (cached) return cached;
+
+  const url = `${API_ROOT}/repos/${CONFIG.owner}/${CONFIG.repo}/contents/${encodeURIComponent(CONFIG.folder)}?ref=${CONFIG.branch}`;
+  const res = await fetch(url, { headers: { Accept: "application/vnd.github+json" } });
+
+  if (!res.ok) {
+    if (res.status === 404) {
+      throw new Error(`The folder "/${CONFIG.folder}" doesn't exist in ${CONFIG.owner}/${CONFIG.repo} yet.`);
+    }
+    if (res.status === 403) {
+      throw new Error("GitHub's API rate limit was hit. Wait a few minutes and try again.");
+    }
+    throw new Error(`GitHub responded with an error (${res.status}).`);
+  }
+
+  const data = await res.json();
+  const files = (Array.isArray(data) ? data : [data]).filter((item) => item.type === "file");
+  cacheSet(cacheKey, files);
+  return files;
+}
+
+// Last-updated dates require a separate call per file. We fetch them lazily,
+// in small batches, and cache each result by file sha so re-visits are free.
+async function fetchLastUpdated(file) {
+  const cacheKey = `dc:commit:${file.sha}`;
+  const cached = cacheGet(cacheKey);
+  if (cached !== null) return cached;
+
+  try {
+    const url = `${API_ROOT}/repos/${CONFIG.owner}/${CONFIG.repo}/commits?path=${encodeURIComponent(file.path)}&sha=${CONFIG.branch}&per_page=1`;
+    const res = await fetch(url, { headers: { Accept: "application/vnd.github+json" } });
+    if (!res.ok) throw new Error("commit lookup failed");
+    const commits = await res.json();
+    const date = commits?.[0]?.commit?.committer?.date || null;
+    cacheSet(cacheKey, date);
+    return date;
+  } catch {
+    return null; // degrade gracefully — the card just shows no date
+  }
+}
+
+async function fetchAllLastUpdated(files) {
+  const BATCH_SIZE = 6;
+  for (let i = 0; i < files.length; i += BATCH_SIZE) {
+    const batch = files.slice(i, i + BATCH_SIZE);
+    const dates = await Promise.all(batch.map(fetchLastUpdated));
+    batch.forEach((file, idx) => { file.updatedAt = dates[idx]; });
+    renderAll(); // progressive: dates fill in as they arrive
+  }
+}
+
+/* ==========================================================================
+   Normalize
+   ========================================================================== */
+
+function normalize(raw) {
+  const ext = extOf(raw.name);
+  return {
+    name: raw.name,
+    path: raw.path,
+    sha: raw.sha,
+    size: raw.size,
+    downloadUrl: raw.download_url,
+    ext,
+    category: categoryFor(ext),
+    updatedAt: null,
+  };
+}
+
+/* ==========================================================================
+   Rendering
+   ========================================================================== */
+
+function showState(name) {
+  el.loading.classList.add("hidden");
+  el.error.classList.add("hidden");
+  el.empty.classList.add("hidden");
+  el.noResults.classList.add("hidden");
+  el.grid.classList.add("hidden");
+  if (name) document.getElementById(name).classList.remove("hidden");
+}
+
+function applyFiltersAndSort() {
+  let list = [...state.files];
+
+  if (state.filter !== "all") {
+    list = list.filter((f) => f.category === state.filter);
+  }
+
+  if (state.search.trim()) {
+    const q = state.search.trim().toLowerCase();
+    list = list.filter((f) => f.name.toLowerCase().includes(q) || f.ext.includes(q));
+  }
+
+  switch (state.sort) {
+    case "newest": list.sort((a, b) => new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0)); break;
+    case "oldest": list.sort((a, b) => new Date(a.updatedAt || 0) - new Date(b.updatedAt || 0)); break;
+    case "az": list.sort((a, b) => a.name.localeCompare(b.name)); break;
+    case "za": list.sort((a, b) => b.name.localeCompare(a.name)); break;
+    case "largest": list.sort((a, b) => b.size - a.size); break;
+    case "smallest": list.sort((a, b) => a.size - b.size); break;
+  }
+
+  return list;
+}
+
+function buildCard(file, index) {
+  const node = el.template.content.firstElementChild.cloneNode(true);
+  const accent = `var(--c-${file.category})`;
+
+  node.style.setProperty("--accent", accent);
+  node.style.animationDelay = `${Math.min(index * 45, 480)}ms`;
+
+  node.querySelector(".card-icon").innerHTML = (ICONS[file.category] || ICONS.others)(accent);
+  node.querySelector(".badge").textContent = file.ext || "file";
+  node.querySelector(".card-name").textContent = file.name;
+  node.querySelector(".card-name").title = file.name;
+  node.querySelector(".meta-size").textContent = formatBytes(file.size);
+  node.querySelector(".meta-date").textContent = file.updatedAt ? formatDate(file.updatedAt) : "Syncing date\u2026";
+
+  const btn = node.querySelector(".download-btn");
+  btn.href = file.downloadUrl;
+  btn.setAttribute("aria-label", `Download ${file.name}`);
+  btn.addEventListener("click", (e) => spawnRipple(e, btn));
+
+  return node;
+}
+
+function spawnRipple(e, btn) {
+  const rect = btn.getBoundingClientRect();
+  const ripple = document.createElement("span");
+  const size = Math.max(rect.width, rect.height) * 1.4;
+  ripple.className = "ripple";
+  ripple.style.width = ripple.style.height = `${size}px`;
+  ripple.style.left = `${e.clientX - rect.left - size / 2}px`;
+  ripple.style.top = `${e.clientY - rect.top - size / 2}px`;
+  btn.appendChild(ripple);
+  ripple.addEventListener("animationend", () => ripple.remove());
+}
+
+function renderAll() {
+  if (!state.files.length) {
+    showState("emptyState");
+    updateStats([]);
+    return;
+  }
+
+  const list = applyFiltersAndSort();
+
+  el.grid.innerHTML = "";
+  if (!list.length) {
+    showState("noResultsState");
+  } else {
+    const frag = document.createDocumentFragment();
+    list.forEach((file, i) => frag.appendChild(buildCard(file, i)));
+    el.grid.appendChild(frag);
+    showState(null);
+    el.grid.classList.remove("hidden");
+  }
+
+  updateStats(state.files);
+}
+
+/* ==========================================================================
+   Stats (with count-up)
+   ========================================================================== */
+
+function countUp(target, value, formatter = (n) => Math.round(n).toString()) {
+  const start = 0;
+  const duration = 700;
+  const startTime = performance.now();
+
+  function tick(now) {
+    const progress = Math.min((now - startTime) / duration, 1);
+    const eased = 1 - Math.pow(1 - progress, 3);
+    target.textContent = formatter(start + (value - start) * eased);
+    if (progress < 1) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}
+
+let statsAnimated = false;
+
+function updateStats(files) {
+  const totalFiles = files.length;
+  const totalBytes = files.reduce((sum, f) => sum + (f.size || 0), 0);
+  const largest = files.reduce((max, f) => (f.size > (max?.size || 0) ? f : max), null);
+  const latest = files.reduce((max, f) => {
+    if (!f.updatedAt) return max;
+    if (!max || new Date(f.updatedAt) > new Date(max.updatedAt)) return f;
+    return max;
+  }, null);
+
+  if (!statsAnimated && totalFiles > 0) {
+    countUp(el.statFiles, totalFiles);
+    statsAnimated = true;
+  } else {
+    el.statFiles.textContent = totalFiles;
+  }
+
+  el.statStorage.textContent = formatBytes(totalBytes);
+  el.statLargest.textContent = largest ? largest.name : "\u2014";
+  el.statLatest.textContent = latest ? formatDate(latest.updatedAt) : "\u2014";
+}
+
+/* ==========================================================================
+   Init + events
+   ========================================================================== */
+
+async function init() {
+  showState("loadingState");
+  el.syncDot.classList.remove("is-error");
+  el.breadcrumb.textContent = `${CONFIG.owner}/${CONFIG.repo}/${CONFIG.branch}/${CONFIG.folder}`;
+
+  try {
+    const raw = await fetchFolderContents();
+    state.files = raw.map(normalize);
+    renderAll();
+    fetchAllLastUpdated(state.files); // progressive enhancement, non-blocking
+  } catch (err) {
+    el.syncDot.classList.add("is-error");
+    el.errorMessage.textContent = err.message || "Something went wrong talking to GitHub.";
+    showState("errorState");
+  }
+}
+
+el.search.addEventListener("input", (e) => {
+  state.search = e.target.value;
+  renderAll();
+});
+
+el.sort.addEventListener("change", (e) => {
+  state.sort = e.target.value;
+  renderAll();
+});
+
+el.chips.addEventListener("click", (e) => {
+  const chip = e.target.closest(".chip");
+  if (!chip) return;
+  el.chips.querySelectorAll(".chip").forEach((c) => {
+    c.classList.remove("is-active");
+    c.setAttribute("aria-pressed", "false");
+  });
+  chip.classList.add("is-active");
+  chip.setAttribute("aria-pressed", "true");
+  state.filter = chip.dataset.filter;
+  renderAll();
+});
+
+el.retry.addEventListener("click", init);
+
+init();
+
+</script>
+</body>
+</html>
